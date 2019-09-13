@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Regular Polygon</title>
+
+
+<script>
+    var canvas;    // DOM object corresponding to the canvas
+    var graphics;  // 2D graphics context for drawing on the canvas
+
+    // draws a regular polygon with n sides, centered at (cx,cy), with radius r
+    function regularPolygon(n, cx, cy, r, lineColor) {
+        
+        // graphics.strokeStyle = lineColor;
+        graphics.fillStyle = lineColor;
+        var theta = 2 * Math.PI / n;
+        // this begins our polygon
+        //graphics.beginPath();
+
+       //  graphics.moveTo(cx + r, cy);
+
+        var x_prev = cx + r;
+        var y_prev = cy;
+
+        for (i = 1; i <= n; i++){
+            new_x = cx+r*Math.cos(i*theta);
+            new_y = cy+r*Math.sin(i*theta);
+            line(x_prev, y_prev, new_x, new_y);
+            x_prev = new_x;
+            y_prev = new_y;
+            // graphics.lineTo(new_x, new_y);
+        }
+
+        // this is what actually draws the polygon
+        // graphics.stroke();
+    }
+    
+    function line(x1, y1, x2, y2, color, width=1) {
+        var slope;
+        var intercept;
+        graphics.fillStyle = color;
+
+        // Don't divide by 0
+        // Calculate slope and y-intercept for y = mx+b equation
+        if (x1 != x2){
+            slope = (y2 - y1) / (x2 - x1);
+            intercept = y1 - slope * x1;
+        }
+
+        // In quadrant I, less than or equal to line y = x 
+        // Basic idea: step x, increment y
+        if (slope > 0 && slope <= 1){
+            // Keep track of previous y and count, for smoothing purposes
+            var y_prev = y2;
+            var count = 0;
+            // Calculate where line is at midpoint of each pixel
+            x1 = x1 + .5;
+            x2 = x2 + .5;
+            var start_x;
+            var end_x;
+            if (x1 < x2){
+                start_x = x1;
+                end_x = x2;
+            }
+            else{
+                start_x = x2;
+                end_x = x1;
+            }
+            for (x = start_x; x < end_x; x++){
+                // y = mx + b (-.5 and round to get the proper pixel int)
+                y = Math.round((slope * x + intercept) - .5);
+                // Keep track of how often we've been at this y, for smoothing purposes
+                if (y_prev == y){
+                    count = count + 1;
+                }
+                else{
+                    count = 0;
+                }
+                y_prev = y;
+                // If we've been at this y a lot, let's start smoothing so the line looks less jagged when
+                // the y value of pixels being colored does change
+                if (count > 2 && count%2 == 1){
+                    y = y + 1; 
+                }
+                // Color pixel based on if its midpoint contains the line
+                graphics.fillRect(x-.5,y,width,width);
+            }
+        }
+
+        // In quadrant IV, above or equal to line y=-x
+        // Basic idea: step x, decrement y
+        else if (slope >= -1 && slope < 0){
+            var y_prev = y1;
+            var count = 0;
+            x1 = x1 + .5;
+            x2 = x2 + .5;
+            if (x1 < x2){
+                start_x = x1;
+                end_x = x2;
+            }
+            else{
+                start_x = x2;
+                end_x = x1;
+            }
+            for (x = start_x; x < end_x; x++){
+                y = Math.round((slope * x + intercept) - .5);
+                if (y_prev == y){
+                    count = count + 1;
+                }
+                else{
+                    count = 0;
+                }
+                y_prev = y;
+                // Smoothing now decrements y rather than increments it,
+                // because as line progresses, y will be decreasing rather than increasing as it was before
+                if (count > 2 && count%2 == 1){
+                    y = y - 1; 
+                }
+                graphics.fillRect(x-.5,y,width,width);
+            }
+        }
+
+        // In quadrant IV; below line y=-x
+        // Basic idea: step y, decrement x
+        else if (slope < -1){
+            var x_prev = x2;
+            var count = 0;
+            y1 = y1 + .5;
+            y2 = y2 + .5;
+            if (y1 < y2){
+                start_y = y1;
+                end_y = y2;
+            }
+            else{
+                start_y = y2;
+                end_y = y1;
+            }
+            for (y = start_y; y < end_y; y++){
+                // x = (y-b) / m; -.5 and round to get the proper pixel int
+                x = Math.round((y-intercept)/slope - .5);
+                if (x_prev == x){
+                    count = count + 1;
+                }
+                else{
+                    count = 0;
+                }
+                x_prev = x;
+                // x instead of y because we're cycling through the y's in the for loop to generate the x's
+                if (count > 2 && count%2 == 1){
+                    x = x - 1; 
+                }
+                graphics.fillRect(x,y-.5,width,width);
+            }
+        }
+
+        // In quadrant I; above line y=x
+        // Basic idea: step y, increment x
+        else if (slope > 1){
+            var x_prev = x1;
+            var count = 0;
+            y1 = y1 + .5;
+            y2 = y2 + .5;
+            if (y1 < y2){
+                start_y = y1;
+                end_y = y2;
+            }
+            else{
+                start_y = y2;
+                end_y = y1;
+            }
+            for (y = start_y; y < end_y; y++){
+                x = Math.round((y-intercept)/slope - .5);
+                if (x_prev == x){
+                    count = count + 1;
+                }
+                else{
+                    count = 0;
+                }
+                x_prev = x;
+                if (count > 2 && count%2 == 1){
+                    x = x + 1; 
+                }
+                graphics.fillRect(x,y-.5,width,width);
+            }
+        }
+
+        // Horizontal line; no smoothing will be needed
+        else if (slope == 0){
+
+            var start_x;
+            var end_x;
+            if (x1 < x2){
+                start_x = x1;
+                end_x = x2;
+            }
+            else{
+                start_x = x2;
+                end_x = x1;
+            }
+
+            for (x = start_x; x < end_x; x++){
+                graphics.fillRect(x,y1,width,width);
+            }
+        }
+
+        // Vertical line; no smoothing will be needed
+        else if (x1 == x2) {
+
+            if (y1 < y2){
+                start_y = y1;
+                end_y = y2;
+            }
+            else{
+                start_y = y2;
+                end_y = y1;
+            }
+
+            for (y=start_y; y<end_y; y++){
+                graphics.fillRect(x1, y, width, width);
+            }
+        }
+    }
+
+    function generate_polygon() {
+        // Generate random center values for polygon
+        var x = Math.floor(Math.random()*400);
+        var y = Math.floor(Math.random()*400);
+        var r = Math.floor(Math.random()*100);
+        var n = Math.floor(Math.random()*15);
+        if (n < 3){
+            n = 3;
+        }
+        // Possible colors!
+        colors = ["Chocolate", "BlueViolet", "Coral", "Crimson",
+                "DarkMagenta", "DarkRed", "DarkOrchid", "MediumSeaGreen",
+                "PaleVioletRed"];
+        // Pick random color from list
+        var color = colors[Math.floor(Math.random()*colors.length)];
+        // Draw the shape!
+        regularPolygon(n, x, y, r, color)
+    }
+
+    function draw() {
+        regularPolygon(5, 60, 60, 60, "blue");
+        regularPolygon(9, 180, 180, 60, "pink");
+        regularPolygon(180, 100, 100, 40, "DarkRed");
+        generate_polygon();
+        generate_polygon();
+        generate_polygon();
+        generate_polygon();
+        generate_polygon();
+    }
+
+    function init() {
+        canvas = document.getElementById("theCanvas");
+        graphics = canvas.getContext("2d");
+        draw();  // draw something on the canvas
+    }
+</script>
+
+
+</head>
+<body onload="init()">
+    <canvas id="theCanvas" width="450" height="290"></canvas>
+</body>
+</html>
