@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Flood Fill</title>
+
+
+<script>
+    var canvas;    // DOM object corresponding to the canvas
+    var graphics;  // 2D graphics context for drawing on the canvas
+
+    // note: change both for a different background color
+    var backgroundColor = "white";
+    var backgroundRGB = [255,255,255,255];
+
+    // return true if color1==color2, and false otherwise
+    // example input: color1 = [0,255,0,255], pure green
+    function colorEqual(color1, color2) {
+        if (color1[0] != color2[0]){
+            return false;
+        }
+        else if (color1[1] != color2[1]){
+            return false;
+        }
+        else if (color1[2] != color2[2]){
+            return false;
+        }
+        else if (color1[3] != color2[3]){
+            return false;
+        }
+        else{
+            return true;
+        }
+    }
+
+    // fill a shape, starting at the pixel (x,y)
+    // note: make sure to set "fillStyle" to the desired fill color 
+    // before calling this function
+    function floodFill(x, y, oldColor) {
+        var pixColor = graphics.getImageData(x, y, 1, 1).data;
+        if (!colorEqual(pixColor, oldColor)){
+            return;
+        }
+        graphics.fillRect(x, y, 1, 1);
+        floodFill(x+1, y, oldColor);
+        floodFill(x-1, y, oldColor);
+        floodFill(x, y+1, oldColor);
+        floodFill(x, y-1, oldColor);
+    }
+
+    // Doesn't work
+    function sweepFill(x, y, oldColor){
+        var i = x-1;
+        var j = x+1;
+        if (!colorEqual(oldColor, graphics.getImageData(x, y, 1, 1).data)){
+            return;
+        }
+        while (i != 0 && colorEqual(oldColor, graphics.getImageData(i, y, 1, 1).data)){
+            i--;
+        }
+        i++;
+        while(j != canvas.width && colorEqual(oldColor, graphics.getImageData(j, y, 1, 1).data)){
+            j++;
+        }
+        for (k = i; k < j; k++){
+            graphics.fillRect(k, y, 1, 1);
+        }
+        for (k = i; k < j; k++){
+            sweepFill(k, y+1, oldColor);
+            sweepFill(k, y-1, oldColor);
+        }
+    }
+
+    // draws a regular polygon with n sides, centered at (cx,cy), with radius r,
+    // rotated by angle firstAngle,
+    // outlined in color lineColor, and filled in with color fillColor
+    function regularPolygon(n, cx, cy, r, firstAngle, lineColor, fillColor) {
+        
+        graphics.fillStyle = lineColor;
+        var theta = 2 * Math.PI / n;
+
+        var x_prev = cx + r*Math.cos(firstAngle);
+        var y_prev = cy + r*Math.sin(firstAngle);
+
+        for (i = 1; i <= n; i++){
+            new_x = cx+r*Math.cos(i*theta + firstAngle);
+            new_y = cy+r*Math.sin(i*theta + firstAngle);
+            line(x_prev, y_prev, new_x, new_y);
+            x_prev = new_x;
+            y_prev = new_y;
+        }
+        graphics.fillStyle = fillColor;
+        oldColor = graphics.getImageData(cx, cy, 1, 1).data;
+        floodFill(cx, cy, oldColor);
+    }
+    
+    // Draws lines between points, in the color color
+    function line(x1, y1, x2, y2, color, width=1) {
+        var slope;
+        var intercept;
+        graphics.fillStyle = color;
+
+        // Don't divide by 0
+        // Calculate slope and y-intercept for y = mx+b equation
+        if (x1 != x2){
+            slope = (y2 - y1) / (x2 - x1);
+            intercept = y1 - slope * x1;
+        }
+
+        // In quadrant I, less than or equal to line y = x 
+        // Basic idea: step x, increment y
+        if (slope > 0 && slope <= 1){
+            // Keep track of previous y and count, for smoothing purposes
+            var y_prev = y2;
+            var count = 0;
+            // Calculate where line is at midpoint of each pixel
+            x1 = x1 + .5;
+            x2 = x2 + .5;
+            var start_x;
+            var end_x;
+            if (x1 < x2){
+                start_x = x1;
+                end_x = x2;
+            }
+            else{
+                start_x = x2;
+                end_x = x1;
+            }
+            for (x = start_x; x < end_x; x++){
+                // y = mx + b (-.5 and round to get the proper pixel int)
+                y = Math.round((slope * x + intercept) - .5);
+                // Keep track of how often we've been at this y, for smoothing purposes
+                if (y_prev == y){
+                    count = count + 1;
+                }
+                else{
+                    count = 0;
+                }
+                y_prev = y;
+                // If we've been at this y a lot, let's start smoothing so the line looks less jagged when
+                // the y value of pixels being colored does change
+                if (count > 2 && count%2 == 1){
+                    y = y + 1; 
+                }
+                // Color pixel based on if its midpoint contains the line
+                graphics.fillRect(x-.5,y,width,width);
+            }
+        }
+
+        // In quadrant IV, above or equal to line y=-x
+        // Basic idea: step x, decrement y
+        else if (slope >= -1 && slope < 0){
+            var y_prev = y1;
+            var count = 0;
+            x1 = x1 + .5;
+            x2 = x2 + .5;
+            if (x1 < x2){
+                start_x = x1;
+                end_x = x2;
+            }
+            else{
+                start_x = x2;
+                end_x = x1;
+            }
+            for (x = start_x; x < end_x; x++){
+                y = Math.round((slope * x + intercept) - .5);
+                if (y_prev == y){
+                    count = count + 1;
+                }
+                else{
+                    count = 0;
+                }
+                y_prev = y;
+                // Smoothing now decrements y rather than increments it,
+                // because as line progresses, y will be decreasing rather than increasing as it was before
+                if (count > 2 && count%2 == 1){
+                    y = y - 1; 
+                }
+                graphics.fillRect(x-.5,y,width,width);
+            }
+        }
+
+        // In quadrant IV; below line y=-x
+        // Basic idea: step y, decrement x
+        else if (slope < -1){
+            var x_prev = x2;
+            var count = 0;
+            y1 = y1 + .5;
+            y2 = y2 + .5;
+            if (y1 < y2){
+                start_y = y1;
+                end_y = y2;
+            }
+            else{
+                start_y = y2;
+                end_y = y1;
+            }
+            for (y = start_y; y < end_y; y++){
+                // x = (y-b) / m; -.5 and round to get the proper pixel int
+                x = Math.round((y-intercept)/slope - .5);
+                if (x_prev == x){
+                    count = count + 1;
+                }
+                else{
+                    count = 0;
+                }
+                x_prev = x;
+                // x instead of y because we're cycling through the y's in the for loop to generate the x's
+                if (count > 2 && count%2 == 1){
+                    x = x - 1; 
+                }
+                graphics.fillRect(x,y-.5,width,width);
+            }
+        }
+
+        // In quadrant I; above line y=x
+        // Basic idea: step y, increment x
+        else if (slope > 1){
+            var x_prev = x1;
+            var count = 0;
+            y1 = y1 + .5;
+            y2 = y2 + .5;
+            if (y1 < y2){
+                start_y = y1;
+                end_y = y2;
+            }
+            else{
+                start_y = y2;
+                end_y = y1;
+            }
+            for (y = start_y; y < end_y; y++){
+                x = Math.round((y-intercept)/slope - .5);
+                if (x_prev == x){
+                    count = count + 1;
+                }
+                else{
+                    count = 0;
+                }
+                x_prev = x;
+                if (count > 2 && count%2 == 1){
+                    x = x + 1; 
+                }
+                graphics.fillRect(x,y-.5,width,width);
+            }
+        }
+
+        // Horizontal line; no smoothing will be needed
+        else if (slope == 0){
+
+            var start_x;
+            var end_x;
+            if (x1 < x2){
+                start_x = x1;
+                end_x = x2;
+            }
+            else{
+                start_x = x2;
+                end_x = x1;
+            }
+
+            for (x = start_x; x < end_x; x++){
+                graphics.fillRect(x,y1,width,width);
+            }
+        }
+
+        // Vertical line; no smoothing will be needed
+        else if (x1 == x2) {
+
+            if (y1 < y2){
+                start_y = y1;
+                end_y = y2;
+            }
+            else{
+                start_y = y2;
+                end_y = y1;
+            }
+
+            for (y=start_y; y<end_y; y++){
+                graphics.fillRect(x1, y, width, width);
+            }
+        }
+    }
+
+    // Draws an oval-like shape with center (cx, cy), radii r1 and r2,
+    // slopeThing determines how lines connect in places that would be curved in an actual oval
+    // color is the outline and fill color
+    function oval(cx, cy, r1, r2, slopeThing, color){
+        d1 = r1/2;
+        d2 = d1*slopeThing;
+        line(cx-d1, cy, cx-d2, cy+r2, color);
+        line(cx-d2, cy+r2, cx+d2, cy+r2, color);
+        line(cx+d2, cy+r2, cx+d1, cy, color);
+        line(cx+d1, cy, cx+d2, cy-r2, color);
+        line(cx+d2, cy-r2, cx-d2, cy-r2, color);
+        line(cx-d2, cy-r2, cx-d1, cy, color);
+        graphics.fillStyle = color;
+        floodFill(cx, cy, graphics.getImageData(cx, cy, 1, 1).data);
+    }
+
+    function draw() {
+        // make sure to color the background first, since it doesn't have a default color
+        graphics.fillStyle = backgroundColor;
+        graphics.fillRect(0,0,canvas.width,canvas.height);
+        regularPolygon(4, 40, 40, 40, Math.PI/4, "DarkRed", "Cyan");
+        // Base of face
+        regularPolygon(30, 175, 175, 75, 0, "Black", "Black");
+        regularPolygon(30, 110, 110, 50, 0, "Black", "Black");
+        regularPolygon(30, 250, 110, 50, 0, "Black", "Black");
+        // Tan base of face
+        oval(175, 217, 150, 30, 3/4, "Tan");
+        oval(150, 182, 50, 70, 1/2, "Tan");
+        oval(200, 182, 50, 70, 1/2, "Tan");
+        // Smile
+        regularPolygon(30, 175, 210, 30, 0, "Black", "Black");
+        regularPolygon(4, 175, 185, 50, Math.PI/4, "Tan", "Tan");
+        oval(175, 230, 15, 6, 3/4, "Red");
+        // Nose
+        oval(175, 190, 30, 10, 3/4, "Black");
+        // Eye white
+        oval(150, 155, 20, 20, 2/3, "#FEFEFA");
+        oval(200, 155, 20, 20, 2/3, "#FEFEFA");
+        // Eye black
+        oval(150, 160, 12, 8, 2/3, "Black");
+        oval(200, 160, 12, 8, 2/3, "Black");
+    }
+
+    function init() {
+        canvas = document.getElementById("theCanvas");
+        graphics = canvas.getContext("2d");
+        draw();  // draw something on the canvas
+    }
+</script>
+
+
+</head>
+<body onload="init()">
+    <canvas id="theCanvas" width="450" height="290"></canvas>
+</body>
+</html>
