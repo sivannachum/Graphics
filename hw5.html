@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Bezier Curves</title>
+
+<script>
+    var canvas;    // DOM object corresponding to the canvas
+    var graphics;  // 2D graphics context for drawing on the canvas
+    var numPoints = 300; // number of points for a Bezier curve
+    // These variables are necessary for my name animation
+    var count = -1;
+    var timer;
+
+    // Takes in a time t between 0 and 1 (inclusive) and two control points
+    // Returns the point on the Bézier line between p0 and p1
+    function bezierLineHelper(t, p0, p1) {
+        var x = (1-t)*p0[0] + t*p1[0];
+        var y = (1-t)*p0[1] + t*p1[1];
+        return [x, y];
+    }
+
+    // Draws a bezier line, in an "animated" fashion
+    async function bezierLine(p0, p1) {
+        // Calculate each step of t
+        var step = 1/numPoints;
+        var first_x = p0[0];
+        var first_y = p0[1];
+        // Set up our promise
+        var wait = ms => new Promise((r, j)=>setTimeout(r, ms));
+        // Go from t = 0 to t = 1, drawing points on the line in between
+        for (t = 0; t <= 1; t = t+step){
+            graphics.beginPath();
+            graphics.moveTo(first_x, first_y);
+            var next_point = bezierLineHelper(t, p0, p1);
+            var next_x = next_point[0];
+            var next_y = next_point[1];
+            graphics.lineTo(next_x, next_y);
+            first_x = next_x;
+            first_y = next_y;
+            // Wait before drawing
+            await wait(20);
+            graphics.stroke();
+        }
+        // Draw finishing line
+        graphics.beginPath();
+        graphics.moveTo(first_x, first_y);
+        graphics.lineTo(p1[0], p1[1]);
+        await wait(20);
+        graphics.stroke();
+    }
+
+    // Takes in a time t between 0 and 1 (inclusive) and three control points
+    // Returns the point on the Bézier curve between p0 and p2
+    function bezierQuadHelper(t, p0, p1, p2) {
+        var firstPoint = bezierLineHelper(t, p0, p1);
+        var secondPoint = bezierLineHelper(t, p1, p2);
+        var finalPoint = bezierLineHelper(t, firstPoint, secondPoint);
+        return finalPoint;
+    }
+
+    // Draws a bezier quadratic curve, in an "animated" fashion
+    async function bezierQuad(p0, p1, p2) {
+        // Calculate each step of t
+        var step = 1/numPoints;
+        var first_x = p0[0];
+        var first_y = p0[1];
+        // Set up our promise
+        var wait = ms => new Promise((r, j)=>setTimeout(r, ms));
+        // Go from t = 0 to t = 1, drawing points on the curve in between
+        for (t = 0; t <= 1; t = t+step){
+            graphics.beginPath();
+            graphics.moveTo(first_x, first_y);
+            var next_point = bezierQuadHelper(t, p0, p1, p2);
+            var next_x = next_point[0];
+            var next_y = next_point[1];
+            graphics.lineTo(next_x, next_y);
+            first_x = next_x;
+            first_y = next_y;
+            // Wait before drawing
+            await wait(20);
+            graphics.stroke();
+        }
+        // Draw finishing line
+        graphics.beginPath();
+        graphics.moveTo(first_x, first_y);
+        graphics.lineTo(p2[0], p2[1]);
+        await wait(20);
+        graphics.stroke();
+    }
+
+    // Takes in a time t between 0 and 1 (inclusive) and four control points
+    // Returns the point on the Bézier curve between p0 and p3
+    function bezierCubicHelper(t, p0, p1, p2, p3) {
+        var firstPoint = bezierLineHelper(t, p0, p1);
+        var secondPoint = bezierLineHelper(t, p1, p2);
+        var thirdPoint = bezierLineHelper(t, p2, p3);
+        var finalPoint = bezierQuadHelper(t, firstPoint, secondPoint, thirdPoint);
+        return finalPoint;
+    }
+
+    // Draws a bezier cubic curve, in an "animated" fashion
+    async function bezierCubic(p0, p1, p2, p3) {
+        // Calculate each step of t
+        var step = 1/numPoints;
+        var first_x = p0[0];
+        var first_y = p0[1];
+        // Set up our promise
+        var wait = ms => new Promise((r, j)=>setTimeout(r, ms));
+        // Go from t = 0 to t = 1, drawing points on the curve in between
+        for (t = 0; t <= 1; t = t+step){
+            graphics.beginPath();
+            graphics.moveTo(first_x, first_y);
+            var next_point = bezierCubicHelper(t, p0, p1, p2, p3);
+            var next_x = next_point[0];
+            var next_y = next_point[1];
+            graphics.lineTo(next_x, next_y);
+            first_x = next_x;
+            first_y = next_y;
+            // Wait before drawing
+            await wait(20);
+            graphics.stroke();
+        }
+        // Draw finishing line
+        graphics.beginPath();
+        graphics.moveTo(first_x, first_y);
+        graphics.lineTo(p3[0], p3[1]);
+        await wait(20);
+        graphics.stroke();   
+    }
+
+    function draw() {
+        graphics.lineWidth = 3;
+
+        // set up control points
+        var p0 = [200, 110];
+        var p1 = [200, 300];
+
+        var r1 = [30, 50];
+
+        var q1 = [300,50];
+        var q2 = [330,140];
+
+        // Draw a split heart
+        bezierLine(p0, p1);
+        bezierQuad(p0, r1, p1);
+        bezierCubic(p0, q1, q2, p1);
+        // draw 3 bezier curves, all starting at p0 and ending at p1
+        // notice the difference between the quadratic and cubic curves
+        
+        numPoints = 300;
+        // First call to drawInOrder
+        drawInOrder();
+    }
+    
+    // Draw my name, in an animated fashion
+    function drawInOrder(){
+        // Draw a certain part of my name based on what number call we're on
+        // Increase count each time
+        count++;
+        // S
+        if (count == 0){
+            // On the first time in, set the interval to call again
+            timer = setInterval(drawInOrder, 3500);
+            bezierCubic([350, 300], [300, 275], [300, 325], [330, 325]);
+        }
+        else if (count == 1){
+            // I sometimes change numPoints to make sure nothing goes "overtime" and runs into the next call
+            numPoints = 150;
+            bezierCubic([330, 325], [370, 330], [370, 375], [300, 350]);
+        }
+        // i
+        else if (count == 2){
+            numPoints = 150;
+            bezierLine([365, 330], [365, 355]);
+        }
+        // i dot
+        else if (count == 3){
+            numPoints = 120;
+            bezierQuad([365, 318], [358, 322], [365, 326]);
+        }
+        else if (count == 4){
+            bezierQuad([365, 326], [372, 322], [365, 318]);
+        }
+        // v
+        else if (count == 5){
+            numPoints = 100;
+            bezierQuad([375, 330], [379, 350], [383, 355]);
+        }
+        else if (count == 6){
+            bezierQuad([383, 355], [387, 350], [391, 330]);
+        }
+        // a
+        else if (count == 7){
+            numPoints = 150;
+            bezierCubic([415, 330], [400, 333], [396, 340], [398, 345]);
+        }
+        else if (count == 8){
+            bezierCubic([398, 345], [400, 357], [410, 355], [418, 353]);
+        }
+        else if (count == 9){
+            bezierLine([415, 330], [419, 356]);
+        }
+        // n
+        else if (count == 10){
+            bezierLine([427, 330], [427, 355]);
+        }
+        else if (count == 11){
+            numPoints = 150;
+            bezierCubic([427, 335], [440, 330], [445, 330], [445, 355]);
+        }
+        else if (count == 12){
+            // Now that we've finished writing my name, let's clear the interval and canvas
+            clearInterval(timer);
+            graphics.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
+            // Let's set a new color :), reset count, and do it again :)
+            graphics.strokeStyle = 'rgb(' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ', ' + Math.floor(Math.random() * 256) + ')';
+            count = -1;
+            numPoints = 150;
+            drawInOrder();
+        }
+    }
+
+    function init() {
+        canvas = document.getElementById("theCanvas");
+        graphics = canvas.getContext("2d");
+        draw();  // draw something on the canvas
+    }
+</script>
+
+
+</head>
+<body onload="init()">
+    <canvas id="theCanvas" width="640" height="480"></canvas>
+</body>
+</html>

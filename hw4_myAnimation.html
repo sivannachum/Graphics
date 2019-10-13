@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Transformation Matrices</title>
+
+<script>
+    // I worked alone
+    var canvas;    // DOM object corresponding to the canvas
+    var graphics;  // 2D graphics context for drawing on the canvas
+
+    // this GLOBAL variable is responsible for maintaining the current set of transformations (3x3)
+    var currMatrix;
+
+    // these global variables help with animating the flower and my name
+    var timer;
+    var count = 0;
+    var str = "SivanNachum";
+    // This is my name in Hebrew
+    var str2 = "סיוןנחום";
+
+    // this function multiplies the current matrix by another transformation,
+    // then updates the current matrix to the result
+    function pushMatrix(newMatrix) {
+        currMatrix = matrixMultiply(currMatrix, newMatrix); // order very important!
+
+        // note that the setTransform method clear the current matrix and then
+        // sets it to be this new one (it does not build up the transformations!)
+        graphics.setTransform(currMatrix[0][0],currMatrix[1][0],
+                           currMatrix[0][1],currMatrix[1][1],
+                           currMatrix[0][2],currMatrix[1][2]);
+    }
+
+    // Returns the identity matrix
+    function identityMatrix(){
+        return [[1, 0, 0], 
+                [0, 1, 0], 
+                [0, 0, 1]];
+    }
+    
+    // Returns a matrix that will scale the x-direction by ax and the y-direction by ay
+    // usually called A
+    function scaleMatrix(ax, ay){
+        return [[ax, 0, 0], 
+                [0, ay, 0], 
+                [0, 0, 1]];
+    }
+
+    // Returns a matrix that will rotate by the angle theta (in radians)
+    // usually called R
+    function rotateMatrix(theta){
+        return [[Math.cos(theta), -Math.sin(theta), 0], 
+                [Math.sin(theta), Math.cos(theta), 0], 
+                [0, 0, 1]];
+    }
+
+    // Returns a matrix that will translate by tx in the x-direction and ty in the y-direction
+    // usually called T
+    function translateMatrix(tx, ty){
+        return [[1, 0, tx],
+                [0, 1, ty],
+                [0, 0, 1]];
+    }
+
+    // Returns a matrix that will reflect over the y-axis
+    // usually called F
+    function reflectionMatrix(){
+        return [[-1, 0, 0],
+                [0, 1, 0],
+                [0, 0, 1]];
+    }
+
+    // Returns a matrix that will x-shear by a factor lambda
+    // usually called S
+    function shearMatrix(lambda){
+        return [[1, 0, 0],
+                [lambda, 1, 0],
+                [0, 0, 1]];
+    }
+
+    // Returns a matrix that will y-shear by a factor lambda
+    // usually called S
+    function yShearMatrix(lambda){
+        return [[1, lambda, 0],
+                [0, 1, 0],
+                [0, 0, 1]];
+    }
+
+    // Returns a matrix that is the product of matrices M1 and M2 (in that order)
+    function matrixMultiply(M1, M2) {
+        // Look at number of rows and columns in each matrix
+        var M1_rows = M1.length;
+        var M1_cols = M1[0].length;
+        var M2_rows = M2.length;
+        var M2_cols = M2[0].length;
+        // Throw an error if we can't multiply so the user knows what's going on
+        if (M1_cols != M2_rows){
+            throw "Cannot multiply matrices where number of columns in M1 does not equal number of rows in M2";
+        }
+        // Initialize new matrix for product
+        var newMatrix = [];
+        // Go through rows of M1 and columns of M2 to produce each row of newMatrix
+        for (var i = 0; i < M1_rows; i++){
+            var row = [];
+            for (var j = 0; j < M2_cols; j++){
+                // Create new entry for newMatrix
+                sum = 0;
+                for (k = 0; k < M1_cols; k++){
+                    sum = sum + M1[i][k] * M2[k][j];
+                }
+                // Add entry to proper row
+                row.push(sum);
+            }
+            // Add each row to newMatrix
+            newMatrix.push(row);
+        }
+        // Return final product
+        return newMatrix;
+    }
+
+    // Draws a flower in the breeze :)
+    function draw(){
+        // Transformations on everything are first.
+        // I wanted the intervals between breeze and no breeze to be a bit long,
+        // But I also wanted the interval for animation to not be too big so you'd see it right away
+        // when you open the file.
+        // This was my solution for that.
+        if (count%10 == 0){
+            translate = translateMatrix(12, -14);
+            pushMatrix(translate);
+            shear = yShearMatrix(-.08);
+            pushMatrix(shear);
+            scale = scaleMatrix(1.1, 1.1);
+            pushMatrix(scale);
+        }
+        else if (count%10 == 5){
+            translate = translateMatrix(-12, 14);
+            pushMatrix(translate);
+            shear = yShearMatrix(.08);
+            pushMatrix(shear);
+            scale = scaleMatrix(1/1.1, 1/1.1);
+            pushMatrix(scale);
+        }
+        else{
+            count++;
+            return;
+        }
+
+        // Clear the canvas between drawings
+        graphics.save(); // save the current set of transformations
+        graphics.setTransform(1, 0, 0, 1, 0, 0); // reset matrix to the identity
+        graphics.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
+        graphics.restore(); // restore the transformations you had before
+
+        // Individual flower parts and their transformations
+
+        // stem
+        graphics.fillStyle = "green";
+        graphics.fillRect(100, 110, 10, 100);
+
+        // petals
+        // petal 1
+        graphics.fillStyle = "yellow";
+        rotate = rotateMatrix(.2);
+        pushMatrix(rotate);
+        shear = shearMatrix(-1.1);
+        pushMatrix(shear);
+        translate = translateMatrix(-44, 75);
+        pushMatrix(translate);
+        graphics.fillRect(140, 140, 25, 40);
+        translate = translateMatrix(44, -75);
+        pushMatrix(translate);
+        shear = shearMatrix(1.1);
+        pushMatrix(shear);
+        rotate = rotateMatrix(-.2);
+        pushMatrix(rotate);
+        // petal 2
+        translate = translateMatrix(100, 60);
+        pushMatrix(translate);
+        rotate = rotateMatrix(1.2);
+        pushMatrix(rotate);
+        shear = shearMatrix(-1.1);
+        pushMatrix(shear);
+        translate = translateMatrix(-120, -80);
+        pushMatrix(translate);
+        graphics.fillRect(140, 140, 25, 40);
+        translate = translateMatrix(120, 80);
+        pushMatrix(translate);
+        shear = shearMatrix(1.1);
+        pushMatrix(shear);
+        rotate = rotateMatrix(-1.2);
+        pushMatrix(rotate);
+        translate = translateMatrix(-100, -60);
+        pushMatrix(translate);
+        // petal 3
+        translate = translateMatrix(140, 80);
+        pushMatrix(translate);
+        rotate = rotateMatrix(2.3);
+        pushMatrix(rotate);
+        shear = shearMatrix(-1.1);
+        pushMatrix(shear);
+        translate = translateMatrix(-120, -80);
+        pushMatrix(translate);
+        graphics.fillRect(140, 140, 25, 40);
+        translate = translateMatrix(120, 80);
+        pushMatrix(translate);
+        shear = shearMatrix(1.1);
+        pushMatrix(shear);
+        rotate = rotateMatrix(-2.3);
+        pushMatrix(rotate);
+        translate = translateMatrix(-140, -80);
+        pushMatrix(translate);
+        // petal 4
+        translate = translateMatrix(145, 130);
+        pushMatrix(translate);
+        rotate = rotateMatrix(3.4);
+        pushMatrix(rotate);
+        shear = shearMatrix(-1.1);
+        pushMatrix(shear);
+        translate = translateMatrix(-120, -80);
+        pushMatrix(translate);
+        graphics.fillRect(140, 140, 25, 40);
+        translate = translateMatrix(120, 80);
+        pushMatrix(translate);
+        shear = shearMatrix(1.1);
+        pushMatrix(shear);
+        rotate = rotateMatrix(-3.4);
+        pushMatrix(rotate);
+        translate = translateMatrix(-145, -130);
+        pushMatrix(translate);
+        // petal 5
+        translate = translateMatrix(110, 150);
+        pushMatrix(translate);
+        rotate = rotateMatrix(4.4);
+        pushMatrix(rotate);
+        shear = shearMatrix(-1.1);
+        pushMatrix(shear);
+        translate = translateMatrix(-120, -80);
+        pushMatrix(translate);
+        graphics.fillRect(140, 140, 25, 40);
+        translate = translateMatrix(120, 80);
+        pushMatrix(translate);
+        shear = shearMatrix(1.1);
+        pushMatrix(shear);
+        rotate = rotateMatrix(-4.4);
+        pushMatrix(rotate);
+        translate = translateMatrix(-110, -150);
+        pushMatrix(translate);
+        // petal 6
+        translate = translateMatrix(70, 130);
+        pushMatrix(translate);
+        rotate = rotateMatrix(5.4);
+        pushMatrix(rotate);
+        shear = shearMatrix(-1.1);
+        pushMatrix(shear);
+        translate = translateMatrix(-120, -80);
+        pushMatrix(translate);
+        graphics.fillRect(140, 140, 25, 40);
+        translate = translateMatrix(120, 80);
+        pushMatrix(translate);
+        shear = shearMatrix(1.1);
+        pushMatrix(shear);
+        rotate = rotateMatrix(-5.4);
+        pushMatrix(rotate);
+        translate = translateMatrix(-70, -130);
+        pushMatrix(translate);
+
+        // Middle part of flower
+        graphics.fillStyle = "orange";
+        graphics.fillRect(97, 100, 15, 15);
+
+        // leaf
+        graphics.fillStyle = "green";
+        rotate = rotateMatrix(.2);
+        pushMatrix(rotate);
+        shear = shearMatrix(-1.3);
+        pushMatrix(shear);
+        translate = translateMatrix(-1, 180);
+        pushMatrix(translate);
+        graphics.fillRect(140, 140, 20, 40);
+        translate = translateMatrix(1, -180);
+        pushMatrix(translate);
+        shear = shearMatrix(1.3);
+        pushMatrix(shear);
+        rotate = rotateMatrix(-.2);
+        pushMatrix(rotate);
+        
+        // Increment count
+        count++;
+        // After a while, let's go to the next animation!
+        if (count == 41){
+            clearInterval(timer);
+            currMatrix = identityMatrix();
+            count = 0;
+            // Draw my name
+            timer = setInterval(draw2, 220);
+        }
+    }
+
+    // Draws my name, in English and Hebrew, spiraling outward
+    function draw2() {
+        // Clear the screen each time before drawing again
+        graphics.save(); // save the current set of transformations
+        graphics.setTransform(1, 0, 0, 1, 0, 0); // reset matrix to the identity
+        graphics.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
+        graphics.restore(); // restore the transformations you had before
+        
+        // In English
+        translate = translateMatrix(150, 150);
+        pushMatrix(translate);
+        scale = scaleMatrix(1.07, 1.07);
+        pushMatrix(scale);
+        rotate = rotateMatrix(1);
+        pushMatrix(rotate);
+        letter = count%str.length;
+        graphics.fillStyle = "purple";
+        graphics.fillText(str.substring(letter, letter+1), 0, 0);
+        translate = translateMatrix(-150, -150);
+        pushMatrix(translate);
+
+        // In Hebrew
+        translate = translateMatrix(150, 150);
+        pushMatrix(translate);
+        scale = scaleMatrix(.5, .5);
+        pushMatrix(scale);
+        rotate = rotateMatrix(-2 * count);
+        pushMatrix(rotate);
+        letter = count%str2.length;
+        graphics.fillStyle = "pink";
+        graphics.fillText(str2.substring(letter, letter+1), 0, 0);
+        rotate = rotateMatrix(2 * count);
+        pushMatrix(rotate);
+        scale = scaleMatrix(2, 2);
+        pushMatrix(scale);
+        translate = translateMatrix(-150, -150);
+        pushMatrix(translate);
+
+        count++;
+        // Once we've had enough, go back to the flower
+        if (count == 7*str2.length){
+            clearInterval(timer);
+            currMatrix = identityMatrix();
+            count = 0;
+            timer = setInterval(draw, 300);
+        }
+    }
+
+    function init() {
+        canvas = document.getElementById("theCanvas");
+        graphics = canvas.getContext("2d");
+        currMatrix = identityMatrix(); // initialize current matrix
+        // Timer for draw, begins by drawing the flower 
+        timer = setInterval(draw, 300);
+    }
+</script>
+
+
+</head>
+<body onload="init()">
+    <canvas id="theCanvas" width="450" height="300"></canvas>
+</body>
+</html>

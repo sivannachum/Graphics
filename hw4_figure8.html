@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Transformation Matrices</title>
+
+<script>
+    // I worked alone
+    var canvas;    // DOM object corresponding to the canvas
+    var graphics;  // 2D graphics context for drawing on the canvas
+
+    // this GLOBAL variable is responsible for maintaining the current set of transformations (3x3)
+    var currMatrix;
+
+    // these global variables help with animating the figure 8
+    var timer;
+    var count = 0;
+
+    // this function multiplies the current matrix by another transformation,
+    // then updates the current matrix to the result
+    function pushMatrix(newMatrix) {
+        currMatrix = matrixMultiply(currMatrix, newMatrix); // order very important!
+
+        // note that the setTransform method clear the current matrix and then
+        // sets it to be this new one (it does not build up the transformations!)
+        graphics.setTransform(currMatrix[0][0],currMatrix[1][0],
+                           currMatrix[0][1],currMatrix[1][1],
+                           currMatrix[0][2],currMatrix[1][2]);
+    }
+
+    // Returns the identity matrix
+    function identityMatrix(){
+        return [[1, 0, 0], 
+                [0, 1, 0], 
+                [0, 0, 1]];
+    }
+    
+    // Returns a matrix that will scale the x-direction by ax and the y-direction by ay
+    // usually called A
+    function scaleMatrix(ax, ay){
+        return [[ax, 0, 0], 
+                [0, ay, 0], 
+                [0, 0, 1]];
+    }
+
+    // Returns a matrix that will rotate by the angle theta (in radians)
+    // usually called R
+    function rotateMatrix(theta){
+        return [[Math.cos(theta), -Math.sin(theta), 0], 
+                [Math.sin(theta), Math.cos(theta), 0], 
+                [0, 0, 1]];
+    }
+
+    // Returns a matrix that will translate by tx in the x-direction and ty in the y-direction
+    // usually called T
+    function translateMatrix(tx, ty){
+        return [[1, 0, tx],
+                [0, 1, ty],
+                [0, 0, 1]];
+    }
+
+    // Returns a matrix that will reflect over the y-axis
+    // usually called F
+    function reflectionMatrix(){
+        return [[-1, 0, 0],
+                [0, 1, 0],
+                [0, 0, 1]];
+    }
+
+    // Returns a matrix that will x-shear by a factor lambda
+    // usually called S
+    function shearMatrix(lambda){
+        return [[1, 0, 0],
+                [lambda, 1, 0],
+                [0, 0, 1]];
+    }
+
+    // Returns a matrix that is the product of matrices M1 and M2 (in that order)
+    function matrixMultiply(M1, M2) {
+        // Look at number of rows and columns in each matrix
+        var M1_rows = M1.length;
+        var M1_cols = M1[0].length;
+        var M2_rows = M2.length;
+        var M2_cols = M2[0].length;
+        // Throw an error if we can't multiply so the user knows what's going on
+        if (M1_cols != M2_rows){
+            throw "Cannot multiply matrices where number of columns in M1 does not equal number of rows in M2";
+        }
+        // Initialize new matrix for product
+        var newMatrix = [];
+        // Go through rows of M1 and columns of M2 to produce each row of newMatrix
+        for (var i = 0; i < M1_rows; i++){
+            var row = [];
+            for (var j = 0; j < M2_cols; j++){
+                // Create new entry for newMatrix
+                sum = 0;
+                for (k = 0; k < M1_cols; k++){
+                    sum = sum + M1[i][k] * M2[k][j];
+                }
+                // Add entry to proper row
+                row.push(sum);
+            }
+            // Add each row to newMatrix
+            newMatrix.push(row);
+        }
+        // Return final product
+        return newMatrix;
+    }
+
+    // Draw first half of figure 8
+    function draw() {
+        // I wanted you to be able to see the whole figure on the screen,
+        // so I did some translation and scaling for that
+        translate = translateMatrix(40, 40);
+        pushMatrix(translate);
+        scale = scaleMatrix(1/7, 1/7);
+        pushMatrix(scale);
+        // Each time rotate and do not undo it
+        // This creates the circle of the 8
+        rotate = rotateMatrix(.1);
+        pushMatrix(rotate);
+        // Draw the rectangle
+        graphics.fillRect(200, 120, 50, 50);
+        // Undo scaling and translation so only difference between this transform and next
+        // is another rotation
+        scale = scaleMatrix(7, 7);
+        pushMatrix(scale);
+        translate = translateMatrix(-40, -40);
+        pushMatrix(translate);
+
+        // Keep track of how far we've gone in our circle
+        count++;
+        // Once we've gone far enough, start the next part of the figure 8
+        if (count == 62){
+            // Clear the timer
+            clearInterval(timer);
+            // Reset currMatrix and count
+            currMatrix = identityMatrix();
+            count = 0;
+            // Initialize the first point for the next part of the figure 8 in the proper position
+            translate = translateMatrix(93, 93);
+            pushMatrix(translate);
+            scale = scaleMatrix(1/7, 1/7);
+            pushMatrix(scale);
+            rotate = rotateMatrix(Math.PI + .48);
+            pushMatrix(rotate);
+            graphics.fillRect(200, 120, 50, 50);
+            scale = scaleMatrix(7, 7);
+            pushMatrix(scale);
+            translate = translateMatrix(-93, -93);
+            pushMatrix(translate);
+            // Set timer for draw2
+            timer = setInterval(draw2, 50);
+        }
+    }
+
+    // Draw second half of figure 8
+    function draw2(){
+        // Same idea as draw but just in a different place (translation) and direction (rotation)
+        translate = translateMatrix(93, 93);
+        pushMatrix(translate);
+        scale = scaleMatrix(1/7, 1/7);
+        pushMatrix(scale);
+        rotate = rotateMatrix(-.1);
+        pushMatrix(rotate);
+        graphics.fillRect(200, 120, 50, 50);
+        scale = scaleMatrix(7, 7);
+        pushMatrix(scale);
+        translate = translateMatrix(-93, -93);
+        pushMatrix(translate);
+        count++;
+        if (count == 65){
+            clearInterval(timer);
+            currMatrix = identityMatrix();
+            count = 0;
+
+            // Clear the canvas as we start a new figure 8
+            graphics.save(); // save the current set of transformations
+            graphics.setTransform(1, 0, 0, 1, 0, 0); // reset matrix to the identity
+            graphics.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
+            graphics.restore(); // restore the transformations you had before
+
+            // Let's call draw again!
+            timer = setInterval(draw, 50);
+        }
+    }
+
+    function init() {
+        canvas = document.getElementById("theCanvas");
+        graphics = canvas.getContext("2d");
+        currMatrix = identityMatrix(); // initialize current matrix
+        // Timer for draw, begins figure 8 drawing
+        timer = setInterval(draw, 50);
+    }
+</script>
+
+
+</head>
+<body onload="init()">
+    <canvas id="theCanvas" width="450" height="300"></canvas>
+</body>
+</html>
