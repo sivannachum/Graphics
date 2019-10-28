@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<head>
+<title>Pyramid</title>
+<script src="three.min.js"></script>
+
+<script>
+    var scene, camera, renderer; // Three.js rendering basics.
+
+    var canvas; // The canvas on which the image is rendered.
+
+    // This needs to be global because I use it in two different methods.
+    // This variable helps determine the position of the camera on the z-axis.
+    var z_pos = 10;
+    // This variable is used in rendering.
+    var count = 0;
+    
+    // Create the scene. This function is called once, as soon as the page loads.
+    // The renderer has already been created before this function is called.
+    function createWorld() {
+        
+        renderer.setClearColor(0); // Set background color (0, or 0x000000, is black).
+        scene = new THREE.Scene(); // Create a new scene which we can add objects to.
+    
+        // create a camera, sitting on the positive z-axis.  The camera is not part of the scene.
+        var fov = 20;
+        var aspect = canvas.width/canvas.height;
+        var near = 1;
+        var far = 30;
+        camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
+        camera.position.z = z_pos;
+
+        // create some lights and add them to the scene.
+        // dim light shining from above
+        scene.add( new THREE.DirectionalLight( 0xffffff, 0.4 ) );
+
+        // a light to shine in the direction the camera faces
+        var viewpointLight = new THREE.DirectionalLight( 0xffffff, 0.8 );  
+        viewpointLight.position.set(0,0,1);  // shines down the z-axis
+        scene.add(viewpointLight);
+
+        // Draws a yellow plane on the xz-axis
+        // arguments are width along the x-axis, then width along y-axis
+        var plane_width = 8;
+        var plane_height = 5.5;
+        var geometry = new THREE.PlaneGeometry(plane_width, plane_height);
+        var material = new THREE.MeshBasicMaterial({color: 0xffff00, side: THREE.DoubleSide});
+        var plane = new THREE.Mesh( geometry, material );
+        plane.rotation.set(Math.PI/2, 0, 0);
+        plane.position.set(0, -1, 0);
+        scene.add(plane);
+
+        // Adds 3 pyramids
+        for (i = 0; i < 3; i++){
+            var cx = Math.random() * 5 - 2;
+            var cy = -.9;
+            var cz = -Math.random() * (plane_height - 3) + Math.random() * 1.5;
+            var height = 2 * Math.random() + .5;
+            var baseSize = 1 + Math.random();
+            pyramid(cx, cy, cz, height, baseSize);
+        }
+
+        // Adds 10 trees
+        for (i = 0; i < 10; i++){
+            var cx = Math.random() * 5 - 2;
+            var cz = -Math.random() * (plane_height - 3) + Math.random() * 1.5;
+            var height = .3 + Math.random();
+            tree(cx, cz, height);
+        }
+
+        // Adds 200 stars
+        for (i = 0; i < 200; i++){
+            var cx = Math.random() * 5 - 2;
+            var cy = Math.random() + .05;
+            var cz = Math.random() * (z_pos - far) + Math.random() * far;
+            star(cx, cy, cz); 
+        }
+
+        // Adds 6 clouds
+        for (i = 0; i < 6; i++){
+            var cx = Math.random() * 5 - 2;
+            var cy = Math.random() + .05;
+            var cz = Math.random() * (z_pos - far) + Math.random() * far;
+            cloud(cx, cy, cz); 
+        }
+    }
+
+    // A function for making a tree that will sit on the plane at point (cx, y-coordinate of plane, cz) with height of height
+    function tree(cx, cz, height){
+        // Tree trunk
+        var cygeometry = new THREE.CylinderGeometry(.05, .05, .2, 32);
+        var cymaterial = new THREE.MeshBasicMaterial({color: 0xb5651d});
+        var cylinder = new THREE.Mesh(cygeometry, cymaterial);
+        cylinder.position.set(cx, -1, cz);
+        scene.add(cylinder);
+        // Tree leaves
+        var cgeometry = new THREE.ConeGeometry(.2, height, 32);
+        var cmaterial = new THREE.MeshBasicMaterial( {color: 0x0228b22} );
+        var cone = new THREE.Mesh(cgeometry, cmaterial);
+        cone.position.set(cx, -.9+height/2, cz);
+        scene.add(cone);
+    }
+
+    // A function for making stars centered at (cx, cy, cz)
+    function star(cx, cy, cz){
+        // Stars are just spheres
+        var sgeometry = new THREE.SphereGeometry(.01, 32, 32);
+        var smaterial = new THREE.MeshPhongMaterial( {color: 0xddddff, emissive: 0x3f3f3f} );
+        var sphere = new THREE.Mesh( sgeometry, smaterial );
+        sphere.position.set(cx, cy, cz);
+        scene.add(sphere);
+    }
+
+    // A function for making clouds centered at (cx, cy, cz)
+    function cloud(cx, cy, cz){
+        // Need lots of spheres for the clouds
+        var smaterial = new THREE.MeshPhongMaterial( {color: 0x2f4f4f} );
+        var ssgeometry = new THREE.SphereGeometry(.2, 32, 32);
+        var sphere3 = new THREE.Mesh(ssgeometry, smaterial);
+        sphere3.position.set(cx+.35, cy+.03, cz);
+        scene.add(sphere3);
+        var sphere4 = new THREE.Mesh(ssgeometry, smaterial);
+        sphere4.position.set(cx+.35, cy-.03, cz);
+        scene.add(sphere4);
+        var sphere5 = new THREE.Mesh(ssgeometry, smaterial);
+        sphere5.position.set(cx+.35, cy-.2, cz);
+        scene.add(sphere5);
+        var sphere6 = new THREE.Mesh(ssgeometry, smaterial);
+        sphere6.position.set(cx+.35, cy-.25, cz);
+        scene.add(sphere6);
+
+        var sphere7 = new THREE.Mesh(ssgeometry, smaterial);
+        sphere7.position.set(cx-.35, cy+.03, cz);
+        scene.add(sphere7);
+        var sphere8 = new THREE.Mesh(ssgeometry, smaterial);
+        sphere8.position.set(cx-.35, cy-.03, cz);
+        scene.add(sphere8);
+        var sphere9 = new THREE.Mesh(ssgeometry, smaterial);
+        sphere9.position.set(cx-.35, cy-.2, cz);
+        scene.add(sphere9);
+        var sphere10 = new THREE.Mesh(ssgeometry, smaterial);
+        sphere10.position.set(cx-.35, cy-.25, cz);
+        scene.add(sphere10);
+
+        var sphere11 = new THREE.Mesh(ssgeometry, smaterial);
+        sphere11.position.set(cx, cy+.03, cz);
+        scene.add(sphere11);
+        var sphere12 = new THREE.Mesh(ssgeometry, smaterial);
+        sphere12.position.set(cx, cy-.03, cz);
+        scene.add(sphere12);
+        var sphere12 = new THREE.Mesh(ssgeometry, smaterial);
+        sphere12.position.set(cx, cy-.2, cz);
+        scene.add(sphere12);
+        var sphere13 = new THREE.Mesh(ssgeometry, smaterial);
+        sphere13.position.set(cx, cy-.25, cz);
+        scene.add(sphere13);
+
+        var sgeometry = new THREE.SphereGeometry(.15, 32, 32);
+        var sphere14 = new THREE.Mesh(sgeometry, smaterial);
+        sphere14.position.set(cx-.15, cy-.15, cz+.1);
+        scene.add(sphere14);
+
+        var sphere15 = new THREE.Mesh(sgeometry, smaterial);
+        sphere15.position.set(cx+.15, cy-.15, cz+.1);
+        scene.add(sphere15);
+
+        var sphere16 = new THREE.Mesh(sgeometry, smaterial);
+        sphere16.position.set(cx-.5, cy-.15, cz);
+        scene.add(sphere16);
+
+        var sphere17 = new THREE.Mesh(sgeometry, smaterial);
+        sphere17.position.set(cx+.5, cy-.15, cz);
+        scene.add(sphere17);
+    }
+
+    // A function for making pyramids centered at (cx, cy, cz) with a height of height and a base size of baseSize
+    function pyramid(cx, cy, cz, height, baseSize) {
+
+        // set up the geometry for our pyramid
+        var pyramidGeom = new THREE.Geometry();
+        center_shift = baseSize/2;
+
+        // Determine the pyramid's vertices, based on base size
+        // First draw the pyramid centered at the origin, later move it
+        pyramidGeom.vertices = [  // array of Vector3 giving vertex coordinates
+            new THREE.Vector3(center_shift, center_shift, 0),  // vertex number 0
+            new THREE.Vector3(center_shift, -center_shift, 0),  // vertex number 1
+            new THREE.Vector3(-center_shift, -center_shift, 0),  // vertex number 2
+            new THREE.Vector3(-center_shift, center_shift, 0),  // vertex number 3
+            new THREE.Vector3(0, 0, height)   // vertex number 4
+        ];
+        
+        pyramidGeom.faces = [  // array of Face3 giving the triangular faces
+            new THREE.Face3(0, 1, 2),  // one half of the bottom face
+            new THREE.Face3(2, 3, 0),  // second half of the bottom face
+            new THREE.Face3(0, 3, 4),  // remaining faces are the four sides
+            new THREE.Face3(3, 2, 4),
+            new THREE.Face3(2, 1, 4),
+            new THREE.Face3(1, 0, 4)
+        ];
+    
+        // compute normals so we know which way is facing "out"
+        pyramidGeom.computeFaceNormals();
+    
+        // map the faces to materials
+        pyramidGeom.faces[0].materialIndex = 0;
+        for (var i = 1; i <= 5; i++) {
+            pyramidGeom.faces[i].materialIndex = i-1;
+        }
+    
+    
+        // Creates a material for the pyramid that is "matte" not "shiny".
+        var pyramidFaceMaterial = [
+            new THREE.MeshLambertMaterial( { color: 0xffffff, flatShading: true } ),
+            new THREE.MeshLambertMaterial( { color: 0x99ffff, flatShading: true } ),
+            new THREE.MeshLambertMaterial( { color: 0xff99ff, flatShading: true } ),
+            new THREE.MeshLambertMaterial( { color: 0xffff99, flatShading: true } ),
+            new THREE.MeshLambertMaterial( { color: 0xff9999, flatShading: true } )
+        ];
+    
+        // Create the pyramid using the geometry and materials we've set up.
+        var pyramid = new THREE.Mesh( pyramidGeom, pyramidFaceMaterial );
+        // Rotate the pyramid so it will sit nicely
+        var theta_x = -1.6;
+        var theta_y = 0;
+        var theta_z = .9;
+        pyramid.rotation.set(theta_x,theta_y,theta_z);   
+        // Set the pyramid's center at (cx, cy, cz)
+        pyramid.position.set(cx, cy, cz);
+        scene.add(pyramid);
+    }
+
+    // Render the scene. This is called for each frame of the animation.
+    function render() {
+        requestAnimationFrame(render);
+        // First we delve into the scene from afar
+        if (count < 0){
+            camera.position.z -= .1;
+        }
+        // Then we go deeper into the scene while turning left
+        else if (count > 0 && count < 500 && count % 3 == 0){
+            camera.rotation.y += .003;
+            camera.position.z -= .03;
+        }
+        // Then we go further into the scene
+        else if (count > 700 && count < 1010){
+            camera.position.z -= .02;
+        }
+        // Then turn right
+        else if (count > 1200 && count < 1450){
+            camera.rotation.y -= .005;
+        }
+        // Then go deeper into the scene
+        else if (count > 1800 && count < 2300){
+            camera.position.z -= .03;
+        }
+        // Reset the viewpoint and count
+        else if (count == 2300){
+            count = -400;
+            camera.rotation.set(0, 0, 0);
+            // Note this may not work as well if near and far for the camera are changed
+            camera.position.z = z_pos * 3;
+        }
+        // Be sure to increment count each time
+        count += 2;
+        renderer.render(scene, camera);
+    }
+
+    //----------------------------------------------------------------------------------
+
+    // The init() function is called by the onload event when the document has loaded.
+    function init() {
+        try {
+            canvas = document.getElementById("glcanvas");
+            renderer = new THREE.WebGLRenderer( { canvas: canvas, antialias: true} );
+        }
+        catch (e) {
+            document.getElementById("canvas-holder").innerHTML = "<h3><b>WebGL is not available.</b><h3>";
+            return;
+        }
+    
+        // create world and render scene
+        createWorld();
+        render();
+    }
+
+</script>
+
+</head>
+<body onload="init()">
+<div id="canvas-holder">
+    <canvas id="glcanvas" width="600" height="300"></canvas>
+</div>
+</body>
+</html>
