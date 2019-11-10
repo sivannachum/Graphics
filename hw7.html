@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<head>
+<title>Solar System</title>
+<script src="three.min.js"></script>
+<script src="KeyboardState.js"></script>
+
+<script>
+    // Use WASD keyboard to look around (up, left, down, right)
+    // Use arrow keys to move around (in, left, out, right)
+    // Something I like to do is chase all the planets around the sun so then I get confused
+    // because the keyboard controls seem to switch because you are behind the sun, 
+    // facing the direction you came from.
+    var scene, camera, renderer;  // Three.js rendering basics.
+
+    var canvas;  // The canvas on which the image is rendered.
+
+    var keyboard = new KeyboardState(); // Allow user to use keyboard to move around scene.
+
+    // Parent objects
+    var solarSystem, planetEarth, planetMars, planetJupiter;
+    // Actual objects in the scene
+    // Mercury and Venus are defined out here because they don't have moons so they don't need a planet parent
+    // Moons need to be able to move independently from their planets in order to orbit them
+    var moonSphere, mercurySphere, venusSphere, marsMoon1, marsMoon2,
+        jupiterMoon1, jupiterMoon2, jupiterMoon3, jupiterMoon4, jupiterMoon5;
+
+    // Create the scene. This function is called once, as soon as the page loads.
+    // The renderer has already been created before this function is called.
+    function createWorld() {
+        
+        renderer.setClearColor(0); // Set background color (0, or 0x000000, is black).
+        scene = new THREE.Scene(); // Create a new scene which we can add objects to.
+    
+        // create a camera, sitting on the positive z-axis.  The camera is not part of the scene.
+        camera = new THREE.PerspectiveCamera(45, canvas.width/canvas.height, 0.1, 600);
+        camera.position.z = 300; // pull back the camera
+
+        // point light lighting the scene from inside the sun
+        var pointLight = new THREE.PointLight("white", 3, 400); // color, intensity, and distance
+        scene.add(pointLight);
+        
+        // directional light lighting the scene from above
+        var dirLight = new THREE.DirectionalLight("blue", .5);
+        dirLight.position.set(0, 100, 0);
+        scene.add(dirLight);
+
+        // Set up solar system hierarchy; the solar system will contain the sun, the planets, and the moons
+        solarSystem = new THREE.Object3D();
+        scene.add(solarSystem);
+
+        // sun
+        // set up the sun sphere vars
+        var sunRadius = 35,
+            segments = 50,
+            rings = 50;
+
+        // create the sun's material
+        var sunSphereGeometry = new THREE.SphereGeometry(sunRadius, segments, rings);
+        // Make the sun glow!
+        var sunSphereMaterial = new THREE.MeshPhongMaterial({ color: "gold", emissive: "gold"});
+        var sunSphere = new THREE.Mesh(sunSphereGeometry, sunSphereMaterial);
+        // add the sun to the solar system
+        solarSystem.add(sunSphere); 
+
+        planetEarth = new THREE.Object3D();
+        // earth and its subobjects move with the solar system
+        solarSystem.add(planetEarth);
+
+        // earth
+        // set up the earth sphere vars
+        var earthRadius = 15;
+
+        // create the earth's material
+        var earthSphereGeometry = new THREE.SphereGeometry(earthRadius, segments, rings);
+        var earthSphereMaterial = new THREE.MeshLambertMaterial({ color: "blue"});
+        var earthSphere = new THREE.Mesh(earthSphereGeometry, earthSphereMaterial);
+        
+        // add the earth to the planetEarth parent
+        planetEarth.add(earthSphere);
+
+        // moon
+        // set up the moon vars
+        var moonRadius = 6;
+
+        // create the moon's material
+        var moonSphereGeometry = new THREE.SphereGeometry(moonRadius, segments, rings);
+        var moonSphereMaterial = new THREE.MeshLambertMaterial({ color: "gray"});
+        moonSphere = new THREE.Mesh(moonSphereGeometry, moonSphereMaterial);
+        // the moon moves with the earth
+        planetEarth.add(moonSphere);  
+
+        // mercury
+        // set up the mercury sphere vars
+        var mercuryRadius = 7;
+        // create mercury's material
+        var mercurySphereGeometry = new THREE.SphereGeometry(mercuryRadius, segments, rings);
+        var mercurySphereMaterial = new THREE.MeshLambertMaterial({ color: "red"});
+        mercurySphere = new THREE.Mesh(mercurySphereGeometry, mercurySphereMaterial);
+        // add mercury to the solar system
+        solarSystem.add(mercurySphere);
+
+        // venus
+        // set up the venus sphere vars
+        var venusRadius = 8;
+        // create venus's material
+        var venusSphereGeometry = new THREE.SphereGeometry(venusRadius, segments, rings);
+        var venusSphereMaterial = new THREE.MeshLambertMaterial({ color: "darkorange"});
+        venusSphere = new THREE.Mesh(venusSphereGeometry, venusSphereMaterial);
+        // add venus to the solar system
+        solarSystem.add(venusSphere);
+
+        planetMars = new THREE.Object3D();
+        // mars and its subobjects move with the solar system
+        solarSystem.add(planetMars);
+
+        // mars
+        // set up the mars sphere vars
+        var marsRadius = 13;
+
+        // create mars' material
+        var marsSphereGeometry = new THREE.SphereGeometry(marsRadius, segments, rings);
+        var marsSphereMaterial = new THREE.MeshLambertMaterial({ color: "maroon"});
+        var marsSphere = new THREE.Mesh(marsSphereGeometry, marsSphereMaterial);
+        
+        // add the mars to the planetMars system
+        planetMars.add(marsSphere);
+
+        // mars moons
+        marsMoonSphere1 = new THREE.Mesh(moonSphereGeometry, moonSphereMaterial);
+        marsMoonSphere2 = new THREE.Mesh(moonSphereGeometry, moonSphereMaterial);
+        // the moons move with the mars
+        planetMars.add(marsMoonSphere1);
+        planetMars.add(marsMoonSphere2);
+
+        planetJupiter = new THREE.Object3D();
+        // jupiter and its subobjects move with the solar system
+        solarSystem.add(planetJupiter);
+
+        // jupiter
+        // set up the jupiter sphere vars
+        var jupiterRadius = 25;
+
+        // create jupiter's material
+        var jupiterSphereGeometry = new THREE.SphereGeometry(jupiterRadius, segments, rings);
+        var jupiterSphereMaterial = new THREE.MeshLambertMaterial({ color: "chocolate"});
+        var jupiterSphere = new THREE.Mesh(jupiterSphereGeometry, jupiterSphereMaterial);
+        
+        // add jupiter to the planetJupiter system
+        planetJupiter.add(jupiterSphere);
+
+        // jupiter moons
+        jupiterMoonSphere1 = new THREE.Mesh(moonSphereGeometry, moonSphereMaterial);
+        jupiterMoonSphere2 = new THREE.Mesh(moonSphereGeometry, moonSphereMaterial);
+        // the moons move with jupiter
+        planetJupiter.add(jupiterMoonSphere1);
+        planetJupiter.add(jupiterMoonSphere2);
+
+        // more moons
+        // set up the moon vars
+        var moonRadius2 = 4;
+        // create the moon's material
+        var moonSphereGeometry2 = new THREE.SphereGeometry(moonRadius2, segments, rings);
+        jupiterMoonSphere3 = new THREE.Mesh(moonSphereGeometry2, moonSphereMaterial);
+        planetJupiter.add(jupiterMoonSphere3);
+        jupiterMoonSphere4 = new THREE.Mesh(moonSphereGeometry2, moonSphereMaterial);
+        planetJupiter.add(jupiterMoonSphere4);
+
+        var moonRadius3 = 10;
+        // create the moon's material
+        var moonSphereGeometry3 = new THREE.SphereGeometry(moonRadius3, segments, rings);
+        jupiterMoonSphere5 = new THREE.Mesh(moonSphereGeometry3, moonSphereMaterial);
+        planetJupiter.add(jupiterMoonSphere5);
+
+    }
+
+    function update() {
+        // Allow the user to move around the scene (by moving the camera) using the keyboard
+        keyboard.update();
+
+        if ( keyboard.pressed("left") ) {
+            camera.position.x -= 1;
+        }
+        if (keyboard.pressed("right")) {
+            camera.position.x += 1;
+        }
+        if (keyboard.pressed("down") ) {
+            camera.position.z += 1;
+        }
+        if ( keyboard.pressed("up") ) {
+            camera.position.z -= 1;
+        }
+        if ( keyboard.pressed("S") ){
+            camera.rotation.x -= .01;
+        }
+        if ( keyboard.pressed("W") ){
+            camera.rotation.x += .01;
+        }
+        if ( keyboard.pressed("A") ){
+            camera.rotation.y += .01;
+        }
+        if ( keyboard.pressed("D") ){
+            camera.rotation.y -= .01;
+        }
+    }
+
+    angle1 = 1;
+    angle2 = 0;
+    angle3 = 0;
+    angle4 = 2;
+    angle5 = 3.14;
+    angle6 = .5;
+    // Render the scene. This is called for each frame of the animation.
+    function render() {
+        requestAnimationFrame( render );
+        // Make earth orbit the sun
+        angle1 = angle1 + .01;
+        planetEarth.position.x = Math.cos(angle1) * 110;
+        planetEarth.position.z = Math.sin(angle1) * 70;
+        angle2 = angle2 + .1;
+        // Make the moon orbit earth
+        moonSphere.position.x = Math.cos(angle2) * 25;
+        moonSphere.position.y = Math.sin(angle2) * 30;
+
+        angle3 = angle3 + .012;
+        mercurySphere.position.x = Math.cos(angle3) * 50;
+        mercurySphere.position.z = Math.sin(angle3) * 50;
+
+        // venus goes around the sun backwards
+        angle4 = angle4 + .002;
+        venusSphere.position.z = Math.cos(angle4) * 60;
+        venusSphere.position.x = Math.sin(angle4) * 65;
+
+        angle5 = angle5 + .02;
+        planetMars.position.x = Math.cos(angle5) * 130;
+        planetMars.position.z = Math.sin(angle5) * 100;
+        marsMoonSphere1.position.x = Math.cos(angle4) * 25;
+        marsMoonSphere1.position.y = Math.sin(angle4) * 40;
+        marsMoonSphere2.position.x = Math.cos(angle3) * 40;
+        marsMoonSphere2.position.y = Math.sin(angle3) * 25;
+
+        angle6 = angle6 + .001;
+        planetJupiter.position.x = Math.cos(angle6) * 200;
+        planetJupiter.position.z = Math.sin(angle6) * 250;
+        jupiterMoonSphere1.position.x = Math.cos(angle4) * 50;
+        jupiterMoonSphere1.position.y = Math.sin(angle4) * 40;
+        jupiterMoonSphere2.position.x = Math.cos(angle3) * 60;
+        jupiterMoonSphere2.position.y = Math.sin(angle3) * 25;
+        jupiterMoonSphere3.position.x = Math.cos(angle2) * 60;
+        jupiterMoonSphere3.position.z = Math.sin(angle2) * 50;
+        jupiterMoonSphere4.position.z = Math.cos(angle1) * 35;
+        jupiterMoonSphere4.position.y = Math.sin(angle1) * 45;
+        jupiterMoonSphere5.position.z = Math.cos(angle5) * 45;
+        jupiterMoonSphere5.position.y = Math.sin(angle5) * 55;
+
+        renderer.render(scene, camera);
+
+        update();
+    }
+
+    //----------------------------------------------------------------------------------
+
+    // The init() function is called by the onload event when the document has loaded.
+    function init() {
+        try {
+            canvas = document.getElementById("glcanvas");
+            renderer = new THREE.WebGLRenderer( { canvas: canvas, antialias: true} );
+        }
+        catch (e) {
+            document.getElementById("canvas-holder").innerHTML = "<h3><b>WebGL is not available.</b><h3>";
+            return;
+        }
+    
+        // create world and render scene
+        createWorld();
+        render();
+    }
+
+</script>
+
+</head>
+<body onload="init()">
+<div id="canvas-holder">
+    <canvas id="glcanvas" width="600" height="400"></canvas>
+</div>
+</body>
+</html>
