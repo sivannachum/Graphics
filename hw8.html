@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8"/>
+<title>Texture Mapping</title>
+<script src="three.min.js"></script>
+
+<!--Adapted from the blog post:
+    http://solutiondesign.com/blog/-/blogs/webgl-and-three-js-texture-mappi-1/-->
+
+<script>
+    // mytexture is from maxpixel.net
+    // the art textures are my own
+    var scene, camera, renderer; // Three.js rendering basics.
+
+    var canvas; // The canvas on which the image is rendered.
+
+    // The rotating octahedron
+    var octahedron;
+    
+    // Create the scene. This function is called once, as soon as the page loads.
+    // The renderer has already been created before this function is called.
+    function createWorld() {
+        
+        renderer.setClearColor(0); // Set background color (0, or 0x000000, is black).
+        scene = new THREE.Scene(); // Create a new scene which we can add objects to.
+    
+        // create a camera, sitting on the positive z-axis.  The camera is not part of the scene.
+        camera = new THREE.PerspectiveCamera(70, canvas.width/canvas.height, 1, 1000);
+
+        var light = new THREE.DirectionalLight( 0xffffff );
+        light.position.set( 1, 1, 1 );
+        scene.add(light);
+
+        // I added another light to be able to see better
+        var light2 = new THREE.DirectionalLight( 0xffffff, .5);
+        light2.position.set( -1, 1, 1 );
+        scene.add(light2);
+
+        // Initialize loader for loading textures
+        var loader = new THREE.TextureLoader();
+
+        // Load the checkerboard pattern and create the corresponding material
+        var checkerboardTexture = loader.load("checkerboard.png");
+        var checkerboardMaterial = new THREE.MeshPhongMaterial( { map: checkerboardTexture } );
+
+        // set up the geometry for the octahedron
+        var octahedronGeom = new THREE.Geometry();
+    
+        octahedronGeom.vertices = [  // array of Vector3 giving vertex coordinates
+        new THREE.Vector3(-1, -1, 0),    // vertex number 0
+        new THREE.Vector3(-1, 1, 0),   // vertex number 1
+        new THREE.Vector3(1, 1, 0),  // vertex number 2
+        new THREE.Vector3(1, -1, 0),   // vertex number 3
+        new THREE.Vector3(0, 0, Math.sqrt(2)),  // vertex number 4
+        new THREE.Vector3(0, 0, -Math.sqrt(2)),  // vertex number 5
+        ];
+                
+        octahedronGeom.faces = [  // array of Face3 giving the triangular faces
+        // top half
+        new THREE.Face3(0, 4, 1),
+        new THREE.Face3(2, 1, 4),
+        new THREE.Face3(3, 2, 4), 
+        new THREE.Face3(0, 3, 4),
+        // bottom half
+        new THREE.Face3(0, 1, 5),
+        new THREE.Face3(1, 2, 5),
+        new THREE.Face3(2, 3, 5),
+        new THREE.Face3(3, 0, 5)
+        ];
+            
+        octahedronGeom.computeFaceNormals();
+
+        // set up several uv coordinates to repeatedly use below
+        var uvcoords = [new THREE.Vector2(0, 0), new THREE.Vector2(1, 0), 
+                        new THREE.Vector2(1, 1), new THREE.Vector2(0, 1)];
+
+        // erase any previous face coordinates
+        octahedronGeom.faceVertexUvs[0] = [];
+
+        // Give each face its texture coordinates
+        octahedronGeom.faceVertexUvs[0].push([uvcoords[0], uvcoords[2], uvcoords[1]]);
+        octahedronGeom.faceVertexUvs[0].push([uvcoords[3], uvcoords[0], uvcoords[1]]);
+        octahedronGeom.faceVertexUvs[0].push([uvcoords[0], uvcoords[1], uvcoords[3]]);
+        octahedronGeom.faceVertexUvs[0].push([uvcoords[2], uvcoords[1], uvcoords[0]]);
+
+        octahedronGeom.faceVertexUvs[0].push([uvcoords[3], uvcoords[0], uvcoords[2]]);
+        octahedronGeom.faceVertexUvs[0].push([uvcoords[3], uvcoords[0], uvcoords[1]]);
+        octahedronGeom.faceVertexUvs[0].push([uvcoords[2], uvcoords[1], uvcoords[3]]);
+        octahedronGeom.faceVertexUvs[0].push([uvcoords[2], uvcoords[3], uvcoords[0]]);
+
+        // create the octahedron using the checkerboard pattern
+        octahedron = new THREE.Mesh(octahedronGeom, checkerboardMaterial);
+        octahedron.rotation.set(-Math.PI/2, 0, 0);
+        octahedron.position.z = -5;
+
+        scene.add(octahedron);
+
+        // floor
+        var plane_width = 8;
+        var plane_height = 8;
+        var planeGeom = new THREE.PlaneGeometry(plane_width, plane_height);
+        // We're in the clouds! :)
+        var skyTexture = loader.load("sky.jpg");
+        var skyMaterial = new THREE.MeshPhongMaterial( { map: skyTexture, side: THREE.DoubleSide } );
+        var plane = new THREE.Mesh(planeGeom, skyMaterial);
+        plane.rotation.set(Math.PI/2, 0, Math.PI/4);
+        plane.position.set(0, -1.4, -5);
+        scene.add(plane);
+
+        // wall 1
+        var wall_width = 15;
+        var wall_height = 15;
+        var wallGeom = new THREE.PlaneGeometry(wall_width, wall_height);
+        var flowerTexture = THREE.ImageUtils.loadTexture( 'mytexture.png' );
+        flowerTexture.wrapS = THREE.RepeatWrapping;
+        flowerTexture.wrapT = THREE.RepeatWrapping;
+        flowerTexture.repeat.set( 4, 4 );
+        var flowerMaterial = new THREE.MeshPhongMaterial( { map: flowerTexture, side: THREE.DoubleSide } );
+        var wall1 = new THREE.Mesh(wallGeom, flowerMaterial);
+        wall1.rotation.set(0, Math.PI/6, 0);
+        wall1.position.set(-6, -1, -4.66);
+        scene.add(wall1);
+
+        // wall 2
+        var wall2 = new THREE.Mesh(wallGeom, flowerMaterial);
+        wall2.rotation.set(0, -Math.PI/6, 0);
+        wall2.position.set(6, -1, -4.5);
+        scene.add(wall2);
+
+        // Art gallery
+        // Frame texture/material for art
+        var frameTexture = loader.load("wallpaper.jpg");
+        var frameMaterial = new THREE.MeshPhongMaterial( { map: frameTexture, side: THREE.DoubleSide } );
+
+        var art1 = new THREE.Object3D();
+        scene.add(art1);
+        var frame1_width = 1.4;
+        var frame1_height = 1;
+        var frame1Geom = new THREE.PlaneGeometry(frame1_width, frame1_height);
+        var frame1 = new THREE.Mesh(frame1Geom, frameMaterial);
+        art1.add(frame1);
+        var painting1_width = 1;
+        var painting1_height = 2/3;
+        var painting1Geom = new THREE.PlaneGeometry(painting1_width, painting1_height);
+        var painting1Texture = loader.load("art/bee.jpg");
+        var painting1Material = new THREE.MeshPhongMaterial( { map: painting1Texture, side: THREE.DoubleSide } );
+        var painting1 = new THREE.Mesh(painting1Geom, painting1Material);
+        painting1.position.set(.05, 0, .2);
+        art1.add(painting1);
+        // Change z to rotate painting (the orientation)
+        art1.rotation.set(0, Math.PI/6, -Math.PI/2);
+        art1.position.set(-4, 2.5, -5);
+
+        var art2 = new THREE.Object3D();
+        scene.add(art2);
+        var frame2_width = 2.1;
+        var frame2_height = 1.9;
+        var frame2Geom = new THREE.PlaneGeometry(frame2_width, frame2_height);
+        var frame2 = new THREE.Mesh(frame2Geom, frameMaterial);
+        art2.add(frame2);
+        var painting2_width = 1.75;
+        var painting2_height = 1.4;
+        var painting2Geom = new THREE.PlaneGeometry(painting2_width, painting2_height);
+        var painting2Texture = loader.load("art/tyler.jpg");
+        var painting2Material = new THREE.MeshPhongMaterial( { map: painting2Texture, side: THREE.DoubleSide } );
+        var painting2 = new THREE.Mesh(painting2Geom, painting2Material);
+        painting2.position.set(-.01, 0, .2);
+        art2.add(painting2);
+        art2.rotation.set(0, Math.PI/6, 0);
+        art2.position.set(-3, .5, -5.8);
+
+        var art3 = new THREE.Object3D();
+        scene.add(art3);
+        var frame3 = new THREE.Mesh(frame2Geom, frameMaterial);
+        art3.add(frame3);
+        var painting3Texture = loader.load("art/abstract.jpg");
+        var painting3Material = new THREE.MeshPhongMaterial( { map: painting3Texture, side: THREE.DoubleSide } );
+        var painting3 = new THREE.Mesh(painting2Geom, painting3Material);
+        painting3.position.set(-.03, -.02, .2);
+        art3.add(painting3);
+        art3.rotation.set(0, Math.PI/6, 0);
+        art3.position.set(-1.5, 2.8, -6.5);
+
+        var art4 = new THREE.Object3D();
+        scene.add(art4);
+        var frame4 = new THREE.Mesh(frame2Geom, frameMaterial);
+        art4.add(frame4);
+        var photo4Texture = loader.load("art/dress.jpg");
+        var photo4Material = new THREE.MeshPhongMaterial( { map: photo4Texture, side: THREE.DoubleSide } );
+        var photo4 = new THREE.Mesh(painting2Geom, photo4Material);
+        photo4.position.set(.01, 0, .2);
+        art4.add(photo4);
+        art4.rotation.set(0, -Math.PI/6, 0);
+        art4.position.set(2.7, -.15, -6);
+
+        var art5 = new THREE.Object3D();
+        scene.add(art5);
+        var frame5 = new THREE.Mesh(frame2Geom, frameMaterial);
+        art5.add(frame5);
+        var drawing5Texture = loader.load("art/ocean.png");
+        var drawing5Material = new THREE.MeshPhongMaterial( { map: drawing5Texture, side: THREE.DoubleSide } );
+        var drawing5 = new THREE.Mesh(painting2Geom, drawing5Material);
+        drawing5.position.set(.05, -.04, .2);
+        art5.add(drawing5);
+        art5.rotation.set(0, -Math.PI/6, 0);
+        art5.position.set(1.3, 2.6, -6.6);
+
+        var art6 = new THREE.Object3D();
+        scene.add(art6);
+        var frame6_width = 2;
+        var frame6_height = 1.3;
+        var frame6Geom = new THREE.PlaneGeometry(frame6_width, frame6_height);
+        var frame6 = new THREE.Mesh(frame6Geom, frameMaterial);
+        art6.add(frame6);
+        var painting6_width = 1.5;
+        var painting6_height = 1;
+        var painting6Geom = new THREE.PlaneGeometry(painting6_width, painting6_height);
+        var painting6Texture = loader.load("art/guitar.jpg");
+        var painting6Material = new THREE.MeshPhongMaterial( { map: painting6Texture, side: THREE.DoubleSide } );
+        var painting6 = new THREE.Mesh(painting6Geom, painting6Material);
+        painting6.position.set(.05, 0, .2);
+        art6.add(painting6);
+        // Change z to rotate painting (the orientation)
+        art6.rotation.set(0, -Math.PI/6, -Math.PI/2);
+        art6.position.set(4, 2.1, -5);
+    }
+
+    // Render the scene. This is called for each frame of the animation.
+    function render() {
+        requestAnimationFrame( render );
+
+        // Make the octahedron rotate
+        octahedron.rotation.z -= .005;
+
+        renderer.render(scene, camera);
+    }
+
+    //----------------------------------------------------------------------------------
+
+    // The init() function is called by the onload event when the document has loaded.
+    function init() {
+        try {
+            canvas = document.getElementById("glcanvas");
+            renderer = new THREE.WebGLRenderer( { canvas: canvas, antialias: true} );
+        }
+        catch (e) {
+            document.getElementById("canvas-holder").innerHTML = "<h3><b>WebGL is not available.</b><h3>";
+            return;
+        }
+    
+        // create world and render scene
+        createWorld();
+        render();
+    }
+
+</script>
+
+</head>
+<body onload="init()">
+<div id="canvas-holder">
+    <canvas id="glcanvas" width="600" height="400"></canvas>
+</div>
+</body>
+</html>
